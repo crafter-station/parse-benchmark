@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, useEffect } from "react";
-import { DocumentInput, type DocumentInput as DocumentInputType, type BlockWithProvider } from "@/components/document-input";
+import { DocumentInput, type DocumentInput as DocumentInputType, type BlockWithProvider, SAMPLES } from "@/components/document-input";
 import { FloatingHeader } from "@/components/floating-header";
 import { ParticleBackground } from "@/components/particle-background";
 import { ProviderSelector, providers } from "@/components/provider-selector";
@@ -13,7 +13,7 @@ import { StatsSummary } from "@/components/stats-summary";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Footer } from "@/components/footer";
-import { Play, RotateCcw, Zap } from "lucide-react";
+import { Play, RotateCcw, Zap, FileImage, Upload, Link } from "lucide-react";
 
 interface RateLimitInfo {
   limit: number;
@@ -115,6 +115,10 @@ export default function Home() {
   
   // Rate limit tracking
   const [rateLimit, setRateLimit] = useState<RateLimitInfo | null>(null);
+  
+  // Empty state input handling
+  const [emptyStateUrl, setEmptyStateUrl] = useState("");
+  const [isDraggingEmpty, setIsDraggingEmpty] = useState(false);
 
   // Generate document preview URL when input changes
   useEffect(() => {
@@ -182,6 +186,50 @@ export default function Home() {
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
     );
   }, []);
+
+  const loadSample = useCallback(async (sampleFile: string, sampleName: string) => {
+    try {
+      const response = await fetch(sampleFile);
+      if (!response.ok) throw new Error("Failed to load sample");
+      const blob = await response.blob();
+      const fileName = sampleFile.split("/").pop() || `${sampleName}.png`;
+      const file = new File([blob], fileName, { type: blob.type });
+      setDocumentInput({ mode: "file", file });
+    } catch (error) {
+      console.error("Failed to load sample:", error);
+    }
+  }, []);
+
+  // Empty state handlers
+  const handleEmptyStateDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingEmpty(false);
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      setDocumentInput({ mode: "file", file: files[0] });
+    }
+  }, []);
+
+  const handleEmptyStateFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files[0]) {
+      setDocumentInput({ mode: "file", file: files[0] });
+    }
+  }, []);
+
+  const handleEmptyStateUrlSubmit = useCallback(() => {
+    const trimmedUrl = emptyStateUrl.trim();
+    if (!trimmedUrl) return;
+    try {
+      const url = new URL(trimmedUrl);
+      if (url.protocol === "https:") {
+        setDocumentInput({ mode: "url", url: trimmedUrl });
+        setEmptyStateUrl("");
+      }
+    } catch {
+      // Invalid URL, ignore
+    }
+  }, [emptyStateUrl]);
 
   const startBenchmark = useCallback(async () => {
     if (!documentInput || selectedProviders.length === 0) return;
@@ -355,16 +403,104 @@ export default function Home() {
               {/* Results Section - Full Width */}
               <div>
                 {results.length === 0 ? (
-                  <div className="border border-dashed border-white/10 h-64 flex flex-col items-center justify-center text-center p-8 bg-black/20">
-                    <div className="w-12 h-12 bg-white/10 flex items-center justify-center mb-3">
-                      <Play className="w-5 h-5 text-muted-foreground" />
+                  <div className="space-y-6">
+                    {/* Upload / URL Section */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Drop Zone */}
+                      <div
+                        className={`relative border-2 border-dashed p-8 transition-all cursor-pointer ${
+                          isDraggingEmpty
+                            ? "border-white/40 bg-white/10"
+                            : "border-white/10 hover:border-white/30 hover:bg-white/5"
+                        }`}
+                        onDragEnter={(e) => { e.preventDefault(); setIsDraggingEmpty(true); }}
+                        onDragLeave={(e) => { e.preventDefault(); setIsDraggingEmpty(false); }}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={handleEmptyStateDrop}
+                      >
+                        <input
+                          type="file"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          onChange={handleEmptyStateFileInput}
+                          accept=".pdf,.png,.jpg,.jpeg,.webp,.gif"
+                        />
+                        <div className="flex flex-col items-center justify-center text-center">
+                          <div className="w-12 h-12 bg-white/10 flex items-center justify-center mb-3">
+                            <Upload className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                          <h3 className="text-sm font-medium text-foreground mb-1">
+                            Drop or click to upload
+                          </h3>
+                          <p className="text-xs text-muted-foreground">
+                            PDF, PNG, JPG, WebP (max 10MB)
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* URL Input */}
+                      <div className="border border-white/10 p-8 bg-black/20">
+                        <div className="flex flex-col items-center justify-center text-center h-full">
+                          <div className="w-12 h-12 bg-white/10 flex items-center justify-center mb-3">
+                            <Link className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                          <h3 className="text-sm font-medium text-foreground mb-3">
+                            Or paste a URL
+                          </h3>
+                          <div className="flex gap-2 w-full max-w-md">
+                            <input
+                              type="url"
+                              value={emptyStateUrl}
+                              onChange={(e) => setEmptyStateUrl(e.target.value)}
+                              onKeyDown={(e) => e.key === "Enter" && handleEmptyStateUrlSubmit()}
+                              placeholder="https://example.com/document.pdf"
+                              className="flex-1 px-3 py-2 bg-black/40 border border-white/10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-white/30"
+                            />
+                            <button
+                              onClick={handleEmptyStateUrlSubmit}
+                              className="px-4 py-2 bg-white/10 border border-white/10 text-sm font-medium text-foreground hover:bg-white/20 transition-colors"
+                            >
+                              Load
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <h3 className="text-base font-medium text-foreground mb-1">
-                      Ready to benchmark
-                    </h3>
-                    <p className="text-sm text-muted-foreground max-w-lg">
-                      Upload a document or paste a URL, select providers, then run the benchmark.
-                    </p>
+
+                    {/* Samples Section */}
+                    <div className="border border-white/10 p-6 bg-black/20">
+                      <div className="text-center mb-4">
+                        <h3 className="text-sm font-medium text-foreground mb-1">
+                          Or try a sample document
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          See how different parsers handle various document types
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                        {SAMPLES.map((sample) => (
+                          <button
+                            key={sample.id}
+                            onClick={() => loadSample(sample.file, sample.name)}
+                            className="group relative overflow-hidden border border-white/10 bg-black/40 hover:bg-white/5 hover:border-white/20 transition-all p-3 text-left"
+                          >
+                            <div className="aspect-[4/3] mb-2 bg-white/5 overflow-hidden flex items-center justify-center">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={sample.file}
+                                alt={sample.name}
+                                className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <FileImage className="w-3.5 h-3.5 text-muted-foreground" />
+                              <span className="text-sm font-medium text-foreground truncate">{sample.name}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5 truncate">{sample.description}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-6">

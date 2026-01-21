@@ -8,12 +8,12 @@ import type { ParseBlock } from "@/lib/types";
 export type InputMode = "file" | "url";
 
 // Preloaded sample documents
-const SAMPLES = [
-  { id: "invoice", name: "Invoice", file: "/samples/invoice.png" },
-  { id: "financial", name: "Financial 10-K", file: "/samples/financial-10k.png" },
-  { id: "handwritten", name: "Handwritten", file: "/samples/handwritten-invoice.png" },
-  { id: "healthcare", name: "Healthcare", file: "/samples/healthcare-details-disclaimers.png" },
-  { id: "math", name: "Math Heavy", file: "/samples/math-heavy-documents.png" },
+export const SAMPLES = [
+  { id: "invoice", name: "Invoice", file: "/samples/invoice.png", description: "Standard business invoice" },
+  { id: "financial", name: "Financial 10-K", file: "/samples/financial-10k.png", description: "SEC financial report" },
+  { id: "handwritten", name: "Handwritten", file: "/samples/handwritten-invoice.png", description: "Handwritten notes" },
+  { id: "healthcare", name: "Healthcare", file: "/samples/healthcare-details-disclaimers.png", description: "Medical document" },
+  { id: "math", name: "Math Heavy", file: "/samples/math-heavy-documents.png", description: "Mathematical formulas" },
 ] as const;
 
 export interface DocumentInput {
