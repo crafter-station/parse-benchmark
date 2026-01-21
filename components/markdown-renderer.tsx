@@ -35,7 +35,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
           </h4>
         ),
         p: ({ children }) => (
-          <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
+          <p className="text-sm text-muted-foreground mb-2 leading-relaxed break-words">
             {children}
           </p>
         ),
@@ -62,19 +62,19 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
           const isInline = !className;
           if (isInline) {
             return (
-              <code className="px-1 py-0.5 bg-white/10 text-xs font-mono text-foreground">
+              <code className="px-1 py-0.5 bg-white/10 text-xs font-mono text-foreground break-all">
                 {children}
               </code>
             );
           }
           return (
-            <code className="block p-3 bg-black/40 text-xs font-mono text-muted-foreground overflow-x-auto mb-2">
+            <code className="block p-3 bg-black/40 text-xs font-mono text-muted-foreground whitespace-pre-wrap break-words mb-2">
               {children}
             </code>
           );
         },
         pre: ({ children }) => (
-          <pre className="mb-2">{children}</pre>
+          <pre className="mb-2 overflow-x-auto max-w-full">{children}</pre>
         ),
         blockquote: ({ children }) => (
           <blockquote className="border-l-2 border-white/20 pl-3 my-2 text-sm text-muted-foreground italic">
@@ -82,8 +82,8 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
           </blockquote>
         ),
         table: ({ children }) => (
-          <div className="overflow-x-auto mb-3">
-            <table className="w-full text-sm border-collapse">
+          <div className="overflow-x-auto mb-3 max-w-full">
+            <table className="min-w-full text-sm border-collapse">
               {children}
             </table>
           </div>
@@ -101,7 +101,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
           </th>
         ),
         td: ({ children }) => (
-          <td className="px-2 py-1.5 text-muted-foreground text-xs">
+          <td className="px-2 py-1.5 text-muted-foreground text-xs break-words">
             {children}
           </td>
         ),

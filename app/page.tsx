@@ -411,6 +411,11 @@ export default function Home() {
         
         if (!provider) return null;
         
+        // Get provider IDs that have blocks
+        const providersWithBlocks = results
+          .filter(r => r.status === "complete" && r.outputs?.json?.blocks?.length)
+          .map(r => r.providerId);
+        
         return (
           <BlockViewerModal
             open={!!blockViewerProviderId}
@@ -418,6 +423,8 @@ export default function Home() {
             provider={provider}
             blocks={blocks}
             documentSrc={documentPreviewSrc}
+            allProviderIds={providersWithBlocks}
+            onNavigate={setBlockViewerProviderId}
           />
         );
       })()}
@@ -429,6 +436,11 @@ export default function Home() {
         
         if (!provider || !result) return null;
         
+        // Get provider IDs that have viewable results (complete or error with content)
+        const viewableProviderIds = results
+          .filter(r => r.status === "complete" || r.status === "error")
+          .map(r => r.providerId);
+        
         return (
           <DetailViewerModal
             open={!!detailViewerProviderId}
@@ -436,6 +448,8 @@ export default function Home() {
             provider={provider}
             result={result}
             documentSrc={documentPreviewSrc}
+            allProviderIds={viewableProviderIds}
+            onNavigate={setDetailViewerProviderId}
           />
         );
       })()}

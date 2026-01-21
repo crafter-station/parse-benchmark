@@ -119,9 +119,9 @@ export function ResultCard({ provider, result, onBlockHover, selectedBlockId, on
                 )}
               </TabsList>
               
-              <TabsContent value="markdown" className="flex-1 m-0 data-[state=inactive]:hidden">
+              <TabsContent value="markdown" className="flex-1 m-0 data-[state=inactive]:hidden overflow-hidden">
                 <ScrollArea className="h-[420px]">
-                  <div className="p-4 prose-sm">
+                  <div className="p-4 prose-sm overflow-hidden">
                     <MarkdownRenderer content={result.outputs?.markdown || result.content} />
                   </div>
                 </ScrollArea>
@@ -145,7 +145,7 @@ export function ResultCard({ provider, result, onBlockHover, selectedBlockId, on
             </Tabs>
           ) : (
             <ScrollArea className="h-[420px]">
-              <div className="p-4 prose-sm">
+              <div className="p-4 prose-sm overflow-hidden">
                 <MarkdownRenderer content={result.content} />
               </div>
             </ScrollArea>
