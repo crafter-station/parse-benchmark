@@ -32,20 +32,27 @@ function createCrafterLogoSvg(size: number, color: string = BRAND.accent): strin
   `;
 }
 
-// Generate random particles similar to the UI
+// Generate particles matching ParticleBackground component
 function generateParticles(width: number, height: number, count: number): string {
   const particles: string[] = [];
   const centerX = width / 2;
   const centerY = height / 2;
-  const maxRadius = Math.max(centerX, centerY) * 1.2;
+  const maxRadius = Math.max(centerX, centerY) * 1.5;
+  
+  // Simulate rotation angle (frozen in time for static image)
+  const rotation = 0.3;
   
   for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
+    const angle = (Math.random() * Math.PI * 2) + rotation;
     const radius = Math.pow(Math.random(), 0.5) * maxRadius;
+    
+    // Create density rings like the component
+    const ringFactor = Math.sin(radius * 0.02) * 0.5 + 0.5;
+    
     const x = centerX + Math.cos(angle) * radius;
     const y = centerY + Math.sin(angle) * radius;
     const size = Math.random() * 1.5 + 0.5;
-    const opacity = (0.2 + Math.random() * 0.5) * (1 - radius / maxRadius);
+    const opacity = (0.3 + Math.random() * 0.7) * ringFactor;
     
     particles.push(`<circle cx="${x}" cy="${y}" r="${size}" fill="rgba(245, 245, 245, ${opacity})"/>`);
   }
@@ -54,127 +61,138 @@ function generateParticles(width: number, height: number, count: number): string
 }
 
 function createOgImageSvg(width: number, height: number): string {
-  const logoSize = 48;
-  const panelPadding = 40;
-  const panelWidth = width - panelPadding * 2;
-  const panelHeight = height - panelPadding * 2;
+  // Match UI structure: max-w-7xl (1280px) centered with mx-4 sm:mx-6
+  // Scale down proportionally for OG image
+  const maxPanelWidth = 1120; // 1280 - 160 (margins)
+  const marginX = 40; // scaled margin
+  const panelWidth = Math.min(maxPanelWidth, width - marginX * 2);
+  const panelX = (width - panelWidth) / 2;
+  
+  const headerHeight = 60;
+  const panelTop = 40;
+  const panelHeight = height - panelTop - 40;
+  
+  const logoSize = 32; // w-8 h-8 = 32px
   
   return `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#080808"/>
-          <stop offset="100%" style="stop-color:${BRAND.background}"/>
-        </linearGradient>
-        <clipPath id="panelClip">
-          <rect x="${panelPadding}" y="${panelPadding}" width="${panelWidth}" height="${panelHeight}"/>
-        </clipPath>
-      </defs>
+      <!-- Solid background matching body background -->
+      <rect width="${width}" height="${height}" fill="${BRAND.background}"/>
       
-      <!-- Background -->
-      <rect width="${width}" height="${height}" fill="url(#bgGradient)"/>
-      
-      <!-- Particles (like ParticleBackground) -->
-      <g opacity="0.6">
-        ${generateParticles(width, height, 200)}
+      <!-- Particles background (like ParticleBackground component) -->
+      <g opacity="0.8">
+        ${generateParticles(width, height, Math.floor((width * height) / 800))}
       </g>
       
-      <!-- Margin lines (like the UI) -->
-      <line x1="${panelPadding}" y1="0" x2="${panelPadding}" y2="${height}" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-      <line x1="${width - panelPadding}" y1="0" x2="${width - panelPadding}" y2="${height}" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-      
-      <!-- Main panel (like the app UI) -->
-      <rect 
-        x="${panelPadding}" 
-        y="${panelPadding}" 
-        width="${panelWidth}" 
-        height="${panelHeight}" 
-        fill="rgba(19, 16, 16, 0.8)"
-        stroke="rgba(255, 255, 255, 0.1)"
-        stroke-width="1"
-      />
-      
-      <!-- Header bar -->
-      <rect 
-        x="${panelPadding}" 
-        y="${panelPadding}" 
-        width="${panelWidth}" 
-        height="60"
-        fill="rgba(19, 16, 16, 0.95)"
-      />
-      <line 
-        x1="${panelPadding}" 
-        y1="${panelPadding + 60}" 
-        x2="${width - panelPadding}" 
-        y2="${panelPadding + 60}" 
-        stroke="rgba(255,255,255,0.1)" 
-        stroke-width="1"
-      />
-      
-      <!-- Logo in header -->
-      <g transform="translate(${panelPadding + 24}, ${panelPadding + 14})">
-        ${createCrafterLogoSvg(logoSize - 16, BRAND.accent)}
+      <!-- Margin lines container (fixed inset-x-0, centered) -->
+      <g opacity="0.1">
+        <line x1="${panelX}" y1="0" x2="${panelX}" y2="${height}" stroke="white" stroke-width="1"/>
+        <line x1="${panelX + panelWidth}" y1="0" x2="${panelX + panelWidth}" y2="${height}" stroke="white" stroke-width="1"/>
       </g>
       
-      <!-- Header text -->
-      <text 
-        x="${panelPadding + 70}" 
-        y="${panelPadding + 30}" 
-        font-family="system-ui, -apple-system, sans-serif" 
-        font-size="16" 
-        font-weight="600" 
-        fill="${BRAND.foreground}"
-      >ParseBench</text>
-      <text 
-        x="${panelPadding + 70}" 
-        y="${panelPadding + 48}" 
-        font-family="system-ui, -apple-system, sans-serif" 
-        font-size="12" 
-        fill="${BRAND.muted}"
-      >Document Parsing Playground</text>
-      
-      <!-- Main content area -->
-      <g transform="translate(${width / 2}, ${height / 2 + 20})">
-        <!-- Large centered logo -->
-        <g transform="translate(-40, -80)">
-          ${createCrafterLogoSvg(80, BRAND.accent)}
+      <!-- Main panel (bg-[#131010]/80 border-x border-b border-white/10) -->
+      <g>
+        <!-- Panel background -->
+        <rect 
+          x="${panelX}" 
+          y="${panelTop}" 
+          width="${panelWidth}" 
+          height="${panelHeight}" 
+          fill="rgba(19, 16, 16, 0.8)"
+        />
+        
+        <!-- Panel borders: left, right, bottom (no top) -->
+        <line x1="${panelX}" y1="${panelTop}" x2="${panelX}" y2="${panelTop + panelHeight}" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <line x1="${panelX + panelWidth}" y1="${panelTop}" x2="${panelX + panelWidth}" y2="${panelTop + panelHeight}" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <line x1="${panelX}" y1="${panelTop + panelHeight}" x2="${panelX + panelWidth}" y2="${panelTop + panelHeight}" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        
+        <!-- Header (bg-[#131010]/95 backdrop-blur-xl border-b border-white/10) -->
+        <rect 
+          x="${panelX}" 
+          y="${panelTop}" 
+          width="${panelWidth}" 
+          height="${headerHeight}"
+          fill="rgba(19, 16, 16, 0.95)"
+        />
+        <line 
+          x1="${panelX}" 
+          y1="${panelTop + headerHeight}" 
+          x2="${panelX + panelWidth}" 
+          y2="${panelTop + headerHeight}" 
+          stroke="rgba(255,255,255,0.1)" 
+          stroke-width="1"
+        />
+        
+        <!-- Header content (px-6 sm:px-8 py-3) -->
+        <g transform="translate(${panelX + 24}, ${panelTop + 12})">
+          <!-- CrafterStation Logo -->
+          <g transform="translate(0, 0)">
+            ${createCrafterLogoSvg(logoSize, BRAND.accent)}
+          </g>
+          
+          <!-- Header text (gap-3) -->
+          <g transform="translate(${logoSize + 12}, 0)">
+            <text 
+              x="0" 
+              y="14" 
+              font-family="system-ui, -apple-system, sans-serif" 
+              font-size="14" 
+              font-weight="600" 
+              fill="${BRAND.foreground}"
+            >ParseBench</text>
+            <text 
+              x="0" 
+              y="28" 
+              font-family="system-ui, -apple-system, sans-serif" 
+              font-size="12" 
+              fill="${BRAND.muted}"
+            >Document Parsing Playground</text>
+          </g>
         </g>
         
-        <!-- App name -->
-        <text 
-          x="0" 
-          y="40" 
-          font-family="system-ui, -apple-system, sans-serif" 
-          font-size="56" 
-          font-weight="700" 
-          fill="${BRAND.foreground}" 
-          text-anchor="middle"
-          letter-spacing="-1.5"
-        >ParseBench</text>
-        
-        <!-- Tagline -->
-        <text 
-          x="0" 
-          y="80" 
-          font-family="system-ui, -apple-system, sans-serif" 
-          font-size="20" 
-          fill="${BRAND.muted}" 
-          text-anchor="middle"
-        >Compare document parsing providers side-by-side</text>
-        
-        <!-- Provider badges simulation -->
-        <g transform="translate(-180, 110)">
-          <rect x="0" y="0" width="90" height="28" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-          <text x="45" y="18" font-family="system-ui" font-size="11" fill="${BRAND.muted}" text-anchor="middle">LlamaParse</text>
+        <!-- Main content area (centered in remaining space) -->
+        <g transform="translate(${width / 2}, ${panelTop + headerHeight + (panelHeight - headerHeight) / 2 + 20})">
+          <!-- Large centered logo -->
+          <g transform="translate(-48, -100)">
+            ${createCrafterLogoSvg(96, BRAND.accent)}
+          </g>
           
-          <rect x="100" y="0" width="80" height="28" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-          <text x="140" y="18" font-family="system-ui" font-size="11" fill="${BRAND.muted}" text-anchor="middle">Mistral OCR</text>
+          <!-- App name -->
+          <text 
+            x="0" 
+            y="40" 
+            font-family="system-ui, -apple-system, sans-serif" 
+            font-size="64" 
+            font-weight="700" 
+            fill="${BRAND.foreground}" 
+            text-anchor="middle"
+            letter-spacing="-2"
+          >ParseBench</text>
           
-          <rect x="190" y="0" width="70" height="28" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-          <text x="225" y="18" font-family="system-ui" font-size="11" fill="${BRAND.muted}" text-anchor="middle">GPT-4o</text>
+          <!-- Tagline -->
+          <text 
+            x="0" 
+            y="80" 
+            font-family="system-ui, -apple-system, sans-serif" 
+            font-size="22" 
+            fill="${BRAND.muted}" 
+            text-anchor="middle"
+          >Compare document parsing providers side-by-side</text>
           
-          <rect x="270" y="0" width="70" height="28" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-          <text x="305" y="18" font-family="system-ui" font-size="11" fill="${BRAND.muted}" text-anchor="middle">Gemini</text>
+          <!-- Provider badges (matching UI style) -->
+          <g transform="translate(-200, 120)">
+            <rect x="0" y="0" width="95" height="32" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1" rx="0"/>
+            <text x="47.5" y="20" font-family="system-ui" font-size="12" fill="${BRAND.muted}" text-anchor="middle">LlamaParse</text>
+            
+            <rect x="105" y="0" width="85" height="32" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1" rx="0"/>
+            <text x="147.5" y="20" font-family="system-ui" font-size="12" fill="${BRAND.muted}" text-anchor="middle">Mistral OCR</text>
+            
+            <rect x="200" y="0" width="75" height="32" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1" rx="0"/>
+            <text x="237.5" y="20" font-family="system-ui" font-size="12" fill="${BRAND.muted}" text-anchor="middle">GPT-4o</text>
+            
+            <rect x="285" y="0" height="32" width="75" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1" rx="0"/>
+            <text x="322.5" y="20" font-family="system-ui" font-size="12" fill="${BRAND.muted}" text-anchor="middle">Gemini</text>
+          </g>
         </g>
       </g>
     </svg>
