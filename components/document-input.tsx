@@ -1,11 +1,20 @@
 "use client";
 
 import React, { useCallback, useState, useEffect } from "react";
-import { Upload, FileText, X, Link, AlertCircle, Clipboard } from "lucide-react";
+import { Upload, FileText, X, Link, AlertCircle, FileImage } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ParseBlock } from "@/lib/types";
 
 export type InputMode = "file" | "url";
+
+// Preloaded sample documents
+const SAMPLES = [
+  { id: "invoice", name: "Invoice", file: "/samples/invoice.png" },
+  { id: "financial", name: "Financial 10-K", file: "/samples/financial-10k.png" },
+  { id: "handwritten", name: "Handwritten", file: "/samples/handwritten-invoice.png" },
+  { id: "healthcare", name: "Healthcare", file: "/samples/healthcare-details-disclaimers.png" },
+  { id: "math", name: "Math Heavy", file: "/samples/math-heavy-documents.png" },
+] as const;
 
 export interface DocumentInput {
   mode: InputMode;
@@ -239,6 +248,23 @@ export function DocumentInput({
     [input, onInputChange]
   );
 
+  const loadSample = useCallback(
+    async (sampleFile: string, sampleName: string) => {
+      setError(null);
+      try {
+        const response = await fetch(sampleFile);
+        if (!response.ok) throw new Error("Failed to load sample");
+        const blob = await response.blob();
+        const fileName = sampleFile.split("/").pop() || `${sampleName}.png`;
+        const file = new File([blob], fileName, { type: blob.type });
+        onInputChange({ mode: "file", file });
+      } catch {
+        setError("Failed to load sample document");
+      }
+    },
+    [onInputChange]
+  );
+
   // Check if URL is an image
   const isImageUrl = (url: string): boolean => {
     const imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
@@ -341,38 +367,57 @@ export function DocumentInput({
 
       {/* File Upload Mode */}
       {mode === "file" && (
-        <div
-          className={cn(
-            "relative border-2 border-dashed p-4 transition-all duration-200 cursor-pointer backdrop-blur-md flex items-center justify-center",
-            isDragging
-              ? "border-white/40 bg-white/10"
-              : "border-white/10 hover:border-white/30 hover:bg-white/5"
-          )}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-        >
-          <input
-            type="file"
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            onChange={handleFileInput}
-            accept={ALLOWED_EXTENSIONS.join(",")}
-          />
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/10 shrink-0">
-              <Upload className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-medium text-foreground">
-                Drop or paste document
-              </p>
-              <p className="text-xs text-muted-foreground">
-                PDF (first 2 pages), PNG, JPG, WebP
-              </p>
+        <>
+          <div
+            className={cn(
+              "relative border-2 border-dashed p-4 transition-all duration-200 cursor-pointer backdrop-blur-md flex items-center justify-center",
+              isDragging
+                ? "border-white/40 bg-white/10"
+                : "border-white/10 hover:border-white/30 hover:bg-white/5"
+            )}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+          >
+            <input
+              type="file"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              onChange={handleFileInput}
+              accept={ALLOWED_EXTENSIONS.join(",")}
+            />
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/10 shrink-0">
+                <Upload className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-medium text-foreground">
+                  Drop or paste document
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  PDF (first 2 pages), PNG, JPG, WebP
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+
+          {/* Sample documents */}
+          <div className="space-y-1.5">
+            <p className="text-xs text-muted-foreground">Or try a sample:</p>
+            <div className="flex flex-wrap gap-1.5">
+              {SAMPLES.map((sample) => (
+                <button
+                  key={sample.id}
+                  onClick={() => loadSample(sample.file, sample.name)}
+                  className="px-2 py-1 text-xs bg-white/5 border border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors flex items-center gap-1"
+                >
+                  <FileImage className="w-3 h-3" />
+                  {sample.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
       )}
 
       {/* URL Input Mode */}
