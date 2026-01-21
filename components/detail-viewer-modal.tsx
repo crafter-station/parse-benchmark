@@ -74,7 +74,7 @@ export function DetailViewerModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!max-w-6xl w-[calc(100vw-3rem)] h-[80vh] p-0 bg-[#0a0a0a] border-white/10 flex flex-col overflow-hidden">
-        <DialogHeader className="px-4 py-3 border-b border-white/10 shrink-0">
+        <DialogHeader className="px-4 py-3 border-b border-white/10 shrink-0 pr-12">
           <DialogTitle className="flex items-center justify-between text-white">
             <div className="flex items-center gap-3">
               <div
