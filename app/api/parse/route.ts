@@ -10,6 +10,7 @@ import {
   calculateCost,
   calculatePageCost 
 } from "@/lib/providers";
+import { ratelimit } from "@/lib/ratelimit";
 
 // Helper to upload base64 image to Vercel Blob storage
 async function uploadImageToBlob(base64: string, filename: string): Promise<string | null> {
@@ -165,13 +166,24 @@ function sanitizeError(error: unknown): string {
 }
 
 // Security: Create safe response headers
-function createSecureHeaders(): HeadersInit {
-  return {
+function createSecureHeaders(rateLimit?: { limit: number; remaining: number; reset: number }): HeadersInit {
+  const headers: HeadersInit = {
     "Content-Type": "application/json",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Cache-Control": "no-store, no-cache, must-revalidate",
   };
+
+  if (rateLimit) {
+    return {
+      ...headers,
+      "X-RateLimit-Limit": rateLimit.limit.toString(),
+      "X-RateLimit-Remaining": rateLimit.remaining.toString(),
+      "X-RateLimit-Reset": rateLimit.reset.toString(),
+    };
+  }
+
+  return headers;
 }
 
 // ============================================================================
@@ -1302,6 +1314,21 @@ async function parseDatalabMarker(
 export async function POST(request: NextRequest) {
   const startTime = performance.now();
 
+  // Rate limiting
+  const ip = request.headers.get("x-forwarded-for") ?? "anonymous";
+  const { success, limit, remaining, reset } = await ratelimit.limit(ip);
+  const rateLimitInfo = { limit, remaining, reset };
+
+  if (!success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      {
+        status: 429,
+        headers: createSecureHeaders(rateLimitInfo),
+      }
+    );
+  }
+
   try {
     const contentType = request.headers.get("content-type") || "";
 
@@ -1440,7 +1467,7 @@ export async function POST(request: NextRequest) {
             pages,
           },
         },
-        { status: 200, headers: createSecureHeaders() }
+        { status: 200, headers: createSecureHeaders(rateLimitInfo) }
       );
     }
 
@@ -1462,7 +1489,7 @@ export async function POST(request: NextRequest) {
             pages,
           },
         },
-        { status: 200, headers: createSecureHeaders() }
+        { status: 200, headers: createSecureHeaders(rateLimitInfo) }
       );
     }
 
@@ -1484,7 +1511,7 @@ export async function POST(request: NextRequest) {
             pages,
           },
         },
-        { status: 200, headers: createSecureHeaders() }
+        { status: 200, headers: createSecureHeaders(rateLimitInfo) }
       );
     }
 
@@ -1546,7 +1573,7 @@ export async function POST(request: NextRequest) {
           outputTokens,
         },
       },
-      { status: 200, headers: createSecureHeaders() }
+      { status: 200, headers: createSecureHeaders(rateLimitInfo) }
     );
   } catch (error) {
     console.error("Parse API error:", error);

@@ -11,13 +11,42 @@ import { DetailViewerModal } from "@/components/detail-viewer-modal";
 import type { ParseResult, ParseOutputs, ParseStats } from "@/lib/types";
 import { StatsSummary } from "@/components/stats-summary";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Footer } from "@/components/footer";
-import { Play, RotateCcw } from "lucide-react";
+import { Play, RotateCcw, Zap } from "lucide-react";
+
+interface RateLimitInfo {
+  limit: number;
+  remaining: number;
+  reset: number;
+}
+
+interface ParseDocumentResult {
+  content: string;
+  outputs?: ParseOutputs;
+  stats: ParseStats;
+  rateLimit?: RateLimitInfo;
+}
+
+function extractRateLimit(response: Response): RateLimitInfo | undefined {
+  const limit = response.headers.get("X-RateLimit-Limit");
+  const remaining = response.headers.get("X-RateLimit-Remaining");
+  const reset = response.headers.get("X-RateLimit-Reset");
+
+  if (limit && remaining && reset) {
+    return {
+      limit: parseInt(limit, 10),
+      remaining: parseInt(remaining, 10),
+      reset: parseInt(reset, 10),
+    };
+  }
+  return undefined;
+}
 
 async function parseDocument(
   input: DocumentInputType,
   providerId: string
-): Promise<{ content: string; outputs?: ParseOutputs; stats: ParseStats }> {
+): Promise<ParseDocumentResult> {
   if (input.mode === "file" && input.file) {
     const formData = new FormData();
     formData.append("file", input.file);
@@ -28,12 +57,15 @@ async function parseDocument(
       body: formData,
     });
 
+    const rateLimit = extractRateLimit(response);
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || "Failed to parse document");
     }
 
-    return response.json();
+    const data = await response.json();
+    return { ...data, rateLimit };
   } else if (input.mode === "url" && input.url) {
     const response = await fetch("/api/parse", {
       method: "POST",
@@ -46,12 +78,15 @@ async function parseDocument(
       }),
     });
 
+    const rateLimit = extractRateLimit(response);
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || "Failed to parse document");
     }
 
-    return response.json();
+    const data = await response.json();
+    return { ...data, rateLimit };
   }
 
   throw new Error("Invalid input");
@@ -77,6 +112,9 @@ export default function Home() {
   const [blockViewerProviderId, setBlockViewerProviderId] = useState<string | null>(null);
   const [detailViewerProviderId, setDetailViewerProviderId] = useState<string | null>(null);
   const [documentPreviewSrc, setDocumentPreviewSrc] = useState<string | null>(null);
+  
+  // Rate limit tracking
+  const [rateLimit, setRateLimit] = useState<RateLimitInfo | null>(null);
 
   // Generate document preview URL when input changes
   useEffect(() => {
@@ -181,6 +219,10 @@ export default function Home() {
     const promises = providersToRun.map(async (providerId) => {
       try {
         const result = await parseDocument(documentInput, providerId);
+        // Update rate limit from the latest response
+        if (result.rateLimit) {
+          setRateLimit(result.rateLimit);
+        }
         return {
           providerId,
           status: "complete" as const,
@@ -268,7 +310,7 @@ export default function Home() {
                         compact
                       />
                     </div>
-                    <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+                    <div className="flex gap-2 shrink-0 w-full sm:w-auto items-center">
                       <Button
                         className="flex-1 sm:flex-none sm:px-6"
                         onClick={startBenchmark}
@@ -286,6 +328,21 @@ export default function Home() {
                         >
                           <RotateCcw className="w-4 h-4" />
                         </Button>
+                      )}
+                      {rateLimit && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground ml-2 cursor-help">
+                              <Zap className="w-3 h-3" />
+                              <span className="tabular-nums">
+                                {rateLimit.remaining}/{rateLimit.limit}
+                              </span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Requests remaining (resets every 10s)
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                     </div>
                   </div>
