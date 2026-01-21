@@ -28,4 +28,4 @@ To help people compare tools on real documents, we built a benchmark playground 
 bun install && bun dev
 ```
 
-Open source. Clone it, fork it, bring your own API keys. [parsebench.crafter.run](https://parsebench.crafter.run)
+Open source. Clone it, fork it, bring your own API keys. [parse.crafter.run](https://parse.crafter.run)

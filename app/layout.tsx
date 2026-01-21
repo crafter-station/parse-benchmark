@@ -8,7 +8,7 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://parsebench.crafter.run'),
+  metadataBase: new URL('https://parse.crafter.run'),
   title: 'ParseBench - Document Parsing Playground',
   description: 'Compare document parsing providers side-by-side. Benchmark LlamaParse, Mistral OCR, Gemini and more.',
   icons: {
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'ParseBench - Document Parsing Playground',
     description: 'Compare document parsing providers side-by-side. Benchmark LlamaParse, Mistral OCR, Gemini and more.',
-    url: 'https://parsebench.crafter.run',
+    url: 'https://parse.crafter.run',
     siteName: 'ParseBench',
     images: [{ url: '/og.png', width: 1200, height: 630, alt: 'ParseBench - Document Parsing Playground' }],
     type: 'website',
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     follow: true,
   },
   alternates: {
-    canonical: 'https://parsebench.crafter.run',
+    canonical: 'https://parse.crafter.run',
   },
 }
 
